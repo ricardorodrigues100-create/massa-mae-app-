@@ -17,6 +17,13 @@ export default function HomePage() {
   const [dataInicio, setDataInicio] = useState(() => new Date().toISOString().slice(0, 10));
   const [aCriar, setACriar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [aConfirmarApagar, setAConfirmarApagar] = useState<string | null>(null);
+
+  async function apagar(id: string) {
+    await fetch(`/api/starters/${id}`, { method: 'DELETE' });
+    setAConfirmarApagar(null);
+    setStarters((atual) => atual?.filter((s) => s.id !== id) ?? null);
+  }
 
   useEffect(() => {
     fetch('/api/starters')
@@ -121,16 +128,42 @@ export default function HomePage() {
           <h2 className="font-display text-xl text-farinha mb-4">As tuas massas mãe</h2>
           <ul className="space-y-2">
             {starters.map((s) => (
-              <li key={s.id}>
-                <Link
-                  href={`/massa/${s.id}`}
-                  className="flex items-center justify-between border border-farinha/15 rounded-md px-4 py-3 hover:border-levain/60 transition-colors"
-                >
-                  <span className="text-farinha">{s.nome}</span>
-                  <span className="text-seca text-sm">
-                    desde {new Date(s.data_inicio + 'T00:00:00').toLocaleDateString('pt-PT')}
-                  </span>
-                </Link>
+              <li key={s.id} className="border border-farinha/15 rounded-md hover:border-levain/60 transition-colors">
+                {aConfirmarApagar === s.id ? (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-farinha/80 text-sm">Apagar "{s.nome}" e todo o seu histórico?</span>
+                    <div className="flex gap-2 shrink-0 ml-4">
+                      <button
+                        onClick={() => apagar(s.id)}
+                        className="bg-perigo text-farinha text-sm rounded-md px-3 py-1.5 hover:opacity-90"
+                      >
+                        Apagar
+                      </button>
+                      <button
+                        onClick={() => setAConfirmarApagar(null)}
+                        className="border border-farinha/25 text-sm rounded-md px-3 py-1.5 text-farinha hover:border-levain"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <Link href={`/massa/${s.id}`} className="flex-1 flex items-center justify-between">
+                      <span className="text-farinha">{s.nome}</span>
+                      <span className="text-seca text-sm mr-4">
+                        desde {new Date(s.data_inicio + 'T00:00:00').toLocaleDateString('pt-PT')}
+                      </span>
+                    </Link>
+                    <button
+                      onClick={() => setAConfirmarApagar(s.id)}
+                      className="text-seca text-sm hover:text-perigo shrink-0"
+                      aria-label={`Apagar ${s.nome}`}
+                    >
+                      Apagar
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
