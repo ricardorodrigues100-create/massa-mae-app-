@@ -16,6 +16,7 @@ export default function HomePage() {
   const [nome, setNome] = useState('Massa Mãe');
   const [dataInicio, setDataInicio] = useState(() => new Date().toISOString().slice(0, 10));
   const [aCriar, setACriar] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/starters')
@@ -25,15 +26,23 @@ export default function HomePage() {
 
   async function comecar(e: React.FormEvent) {
     e.preventDefault();
+    setErro(null);
     setACriar(true);
-    const res = await fetch('/api/starters', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, data_inicio: dataInicio }),
-    });
-    const { starter } = await res.json();
-    setACriar(false);
-    if (starter?.id) window.location.href = `/massa/${starter.id}`;
+    try {
+      const res = await fetch('/api/starters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, data_inicio: dataInicio }),
+      });
+      const dados = await res.json().catch(() => null);
+      if (!res.ok || !dados?.starter?.id) {
+        throw new Error(dados?.error || `Falha ao criar (código ${res.status}). Confirma as variáveis de ambiente do Supabase na Vercel.`);
+      }
+      window.location.href = `/massa/${dados.starter.id}`;
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro desconhecido.');
+      setACriar(false);
+    }
   }
 
   return (
@@ -96,6 +105,7 @@ export default function HomePage() {
           >
             {aCriar ? 'A começar…' : 'Começar'}
           </button>
+          {erro && <p className="text-perigo text-sm">{erro}</p>}
         </form>
         <p className="text-xs text-seca mt-4">
           Ainda não ligaste o Google Calendar?{' '}
